@@ -3,9 +3,10 @@ package models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type User struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Username  string             `bson:"username" json:"username"`
-	Password  string             `bson:"password,omitempty" json:"-"`
-	CreatedAt string             `bson:"created_at" json:"created_at"`
+type Post struct {
+    ID        string `bson:"_id,omitempty" json:"id"`
+    UserID    string `bson:"user_id" json:"user_id"`
+    Username  string `bson:"username" json:"username"`
+    Content   string `bson:"content" json:"content"`
+    CreatedAt string `bson:"created_at" json:"created_at"`
 }
