@@ -50,16 +50,15 @@ func getEnv(key, defaultVal string) string {
 }
 
 func getEnvAsInt(name string, defaultVal int) int {
-	if valueStr, exists := os.LookupEnv(name); exists {
-		var value int
-		_, err := strconv.Sscanf(valueStr, "%d", &value)
-		if err != nil {
-			log.Printf("Invalid integer for %s, using default %d", name, defaultVal)
-			return defaultVal
-		}
-		return value
-	}
-	return defaultVal
+    if valueStr, exists := os.LookupEnv(name); exists {
+        value, err := strconv.Atoi(valueStr)
+        if err != nil {
+            log.Printf("Invalid integer for %s, using default %d", name, defaultVal)
+            return defaultVal
+        }
+        return value
+    }
+    return defaultVal
 }
 
 func getEnvAsBool(name string, defaultVal bool) bool {
@@ -75,16 +74,15 @@ func getEnvAsBool(name string, defaultVal bool) bool {
 }
 
 func getEnvAsRateLimit(name string, defaultVal rate.Limit) rate.Limit {
-	if valueStr, exists := os.LookupEnv(name); exists {
-		var value float64
-		_, err := strconv.Sscanf(valueStr, "%f", &value)
-		if err != nil {
-			log.Printf("Invalid rate limit for %s, using default %v", name, defaultVal)
-			return defaultVal
-		}
-		return rate.Limit(value)
-	}
-	return defaultVal
+    if valueStr, exists := os.LookupEnv(name); exists {
+        value, err := strconv.ParseFloat(valueStr, 64)
+        if err != nil {
+            log.Printf("Invalid rate limit for %s, using default %v", name, defaultVal)
+            return defaultVal
+        }
+        return rate.Limit(value)
+    }
+    return defaultVal
 }
 
 func splitEnv(name string, sep string) []string {
