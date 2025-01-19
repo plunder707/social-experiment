@@ -44,13 +44,13 @@ func (h *Hub) Run() {
             h.mu.Lock()
             h.clients[client] = true
             h.mu.Unlock()
-            log.Printf("[INFO] Client registered: %v", client.conn.RemoteAddr())
+            log.Printf("[INFO] Client registered: %v (UserID: %s)", client.conn.RemoteAddr(), client.UserID)
         case client := <-h.unregister:
             h.mu.Lock()
             if _, ok := h.clients[client]; ok {
                 delete(h.clients, client)
                 close(client.send)
-                log.Printf("[INFO] Client unregistered: %v", client.conn.RemoteAddr())
+                log.Printf("[INFO] Client unregistered: %v (UserID: %s)", client.conn.RemoteAddr(), client.UserID)
             }
             h.mu.Unlock()
         case message := <-h.broadcast:
@@ -61,7 +61,7 @@ func (h *Hub) Run() {
                 default:
                     close(client.send)
                     delete(h.clients, client)
-                    log.Printf("[WARNING] Client send channel full, removed client: %v", client.conn.RemoteAddr())
+                    log.Printf("[WARNING] Client send channel full, removed client: %v (UserID: %s)", client.conn.RemoteAddr(), client.UserID)
                 }
             }
             h.mu.Unlock()
@@ -105,6 +105,7 @@ func (h *Hub) HandleWebSocket(c *gin.Context) {
     }
 
     // (Optional) Use userID if needed for further authorization
+    // For example, you can associate the userID with the client for user-specific messages
 
     // Upgrade to WebSocket
     upgrader := websocket.Upgrader{
@@ -120,12 +121,12 @@ func (h *Hub) HandleWebSocket(c *gin.Context) {
         return
     }
 
-    client := NewClient(h, conn)
+    client := NewClient(h, conn, userID)
     h.register <- client
 
     // Start read and write pumps
     go client.ReadPump()
     go client.WritePump()
 
-    log.Printf("[INFO] New WebSocket connection established: %v", conn.RemoteAddr())
+    log.Printf("[INFO] New WebSocket connection established: %v (UserID: %s)", conn.RemoteAddr(), userID)
 }
