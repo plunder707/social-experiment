@@ -1,12 +1,16 @@
 // models/post.go
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+    "time"
+
+    "go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type Post struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	UserID    string             `bson:"user_id" json:"user_id"`
-	Username  string             `bson:"username" json:"username"`
-	Content   string             `bson:"content" json:"content"`
-	CreatedAt string             `bson:"created_at" json:"created_at"`
+    ID        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+    UserID    primitive.ObjectID `json:"user_id,omitempty" bson:"user_id,omitempty"`
+    Username  string             `json:"username,omitempty" bson:"username,omitempty"`
+    Content   string             `json:"content,omitempty" bson:"content,omitempty"`
+    CreatedAt time.Time          `json:"created_at,omitempty" bson:"created_at,omitempty"`
 }
