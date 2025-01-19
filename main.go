@@ -1,10 +1,8 @@
-// main.go
 package main
 
 import (
 	"context"
 	"log"
-	"time"
 
 	"social-experiment/controllers"
 	"social-experiment/middleware"
@@ -22,22 +20,16 @@ func main() {
 
 	// Initialize MongoDB
 	clientOptions := options.Client().ApplyURI(config.MongoURI)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	mongoClient, err := mongo.Connect(ctx, clientOptions)
+	mongoClient, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		log.Fatalf("[ERROR] Failed to connect to MongoDB: %v", err)
 	}
+	defer func() {
+		if err := mongoClient.Disconnect(context.Background()); err != nil {
+			log.Printf("[ERROR] Failed to disconnect MongoDB: %v", err)
+		}
+	}()
 
-	// Ping MongoDB to verify connection
-	err = mongoClient.Ping(ctx, nil)
-	if err != nil {
-		log.Fatalf("[ERROR] MongoDB ping failed: %v", err)
-	}
-	log.Println("[INFO] Connected to MongoDB!")
-
-	// Select collections
 	userCollection := mongoClient.Database("social-experiment").Collection("users")
 	postCollection := mongoClient.Database("social-experiment").Collection("posts")
 
@@ -77,7 +69,9 @@ func main() {
 	router.POST("/login", controllers.Login(userCollection, config.JWTSecret))
 	router.POST("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.CreatePost(postCollection, hub))
 	router.GET("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.GetPosts(postCollection))
-	router.GET("/ws", hub.HandleWebSocket) // Corrected WebSocket handler
+	router.GET("/ws", func(c *gin.Context) {
+		hub.HandleWebSocket(c.Writer, c.Request)
+	})
 
 	// Start Server
 	address := ":" + config.ServerPort
@@ -99,4 +93,3 @@ func isAllowedOrigin(origin string, allowedOrigins []string) bool {
 	}
 	return false
 }
-
