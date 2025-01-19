@@ -61,7 +61,7 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
         }
 
         post := models.Post{
-            UserID:    objectID,  // Use objectID directly
+            UserID:    objectID.Hex(), // Convert ObjectID to string
             Username:  user.Username,
             Content:   safeContent,
             CreatedAt: time.Now().Format(time.RFC3339),
@@ -80,7 +80,7 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
             return
         }
-        post.ID = insertedID.Hex()
+        post.ID = insertedID.Hex() // Set the post ID as a string
 
         hub.BroadcastPost(post)
 
