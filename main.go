@@ -1,8 +1,13 @@
+// main.go
 package main
 
 import (
     "context"
     "log"
+    "os"
+    "os/signal"
+    "syscall"
+    "time"
 
     "social-experiment/controllers"
     "social-experiment/middleware"
@@ -33,8 +38,8 @@ func main() {
     userCollection := mongoClient.Database("social-experiment").Collection("users")
     postCollection := mongoClient.Database("social-experiment").Collection("posts")
 
-    // Initialize WebSocket Hub
-    hub := websocket.NewHub()
+    // Initialize WebSocket Hub with JWT Secret
+    hub := websocket.NewHub(config.JWTSecret)
     go hub.Run()
 
     // Initialize Gin Router
@@ -70,15 +75,36 @@ func main() {
     router.POST("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.CreatePost(postCollection, hub))
     router.GET("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.GetPosts(postCollection))
     router.GET("/ws", func(c *gin.Context) {
-        hub.HandleWebSocket(c.Writer, c.Request)
+        hub.HandleWebSocket(c)
     })
 
-    // Start Server
-    address := ":" + config.ServerPort
-    log.Printf("[INFO] Starting server on %s", address)
-    if err := router.Run(address); err != nil {
-        log.Fatalf("[ERROR] Failed to run server: %v", err)
+    // Start Server in a Goroutine
+    go func() {
+        address := ":" + config.ServerPort
+        log.Printf("[INFO] Starting server on %s", address)
+        if err := router.Run(address); err != nil && err != http.ErrServerClosed {
+            log.Fatalf("[ERROR] Failed to run server: %v", err)
+        }
+    }()
+
+    // Graceful Shutdown
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+    <-quit
+    log.Println("[INFO] Shutting down server...")
+
+    ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+    defer cancel()
+    if err := router.Shutdown(ctx); err != nil {
+        log.Fatalf("[ERROR] Server forced to shutdown: %v", err)
     }
+
+    // Disconnect MongoDB
+    if err := mongoClient.Disconnect(ctx); err != nil {
+        log.Fatalf("[ERROR] Failed to disconnect MongoDB: %v", err)
+    }
+
+    log.Println("[INFO] Server exiting")
 }
 
 // isAllowedOrigin checks if the origin is allowed based on the CORS configuration
