@@ -38,8 +38,8 @@
 
 ### Prerequisites
 
-- [Go](https://golang.org/dl/) (version 1.17 or higher)
-- [Node.js](https://nodejs.org/en/download/) (version 14 or higher)
+- [Go](https://golang.org/dl/) (version 1.20 or higher)
+- [Node.js](https://nodejs.org/en/download/) (version 18 or higher)
 - [Angular CLI](https://angular.io/cli) (`npm install -g @angular/cli`)
 - [Docker](https://www.docker.com/get-started) (optional, for containerization)
 - [MongoDB](https://www.mongodb.com/try/download/community) (if not using Docker)
