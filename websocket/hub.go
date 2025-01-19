@@ -2,6 +2,7 @@
 package websocket
 
 import (
+	"net/http"
 	"encoding/json"
 	"log"
 	"sync"
