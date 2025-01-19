@@ -16,6 +16,7 @@ import (
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
+    "go.mongodb.org/mongo-driver/mongo/options" // Added import
 )
 
 // CreatePost handles creating a new post
@@ -93,7 +94,6 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
         c.JSON(http.StatusOK, post)
     }
 }
-
 
 // GetPosts handles retrieving all posts
 func GetPosts(db *mongo.Collection) gin.HandlerFunc {
