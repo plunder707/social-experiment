@@ -1,9 +1,9 @@
-// main.go
 package main
 
 import (
     "context"
     "log"
+    "net/http"
     "os"
     "os/signal"
     "syscall"
@@ -78,11 +78,16 @@ func main() {
         hub.HandleWebSocket(c)
     })
 
+    // Create the HTTP server
+    srv := &http.Server{
+        Addr:    ":" + config.ServerPort,
+        Handler: router,
+    }
+
     // Start Server in a Goroutine
     go func() {
-        address := ":" + config.ServerPort
-        log.Printf("[INFO] Starting server on %s", address)
-        if err := router.Run(address); err != nil && err != http.ErrServerClosed {
+        log.Printf("[INFO] Starting server on %s", srv.Addr)
+        if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
             log.Fatalf("[ERROR] Failed to run server: %v", err)
         }
     }()
@@ -95,7 +100,7 @@ func main() {
 
     ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
     defer cancel()
-    if err := router.Shutdown(ctx); err != nil {
+    if err := srv.Shutdown(ctx); err != nil {
         log.Fatalf("[ERROR] Server forced to shutdown: %v", err)
     }
 
