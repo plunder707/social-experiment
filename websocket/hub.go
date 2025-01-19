@@ -6,7 +6,7 @@ import (
 	"log"
 	"sync"
 
-	"maliaki-backend/models"
+	"social-experiment/models"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
