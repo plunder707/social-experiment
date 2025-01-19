@@ -61,7 +61,7 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
         }
 
         post := models.Post{
-            UserID:    objectID.Hex(), // Convert ObjectID to string
+            UserID:    userID.(string),  // Use userID as string
             Username:  user.Username,
             Content:   safeContent,
             CreatedAt: time.Now().Format(time.RFC3339),
@@ -74,13 +74,8 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
             return
         }
 
-        insertedID, ok := result.InsertedID.(primitive.ObjectID)
-        if !ok {
-            log.Printf("[ERROR] Failed to assert InsertedID to ObjectID: %v", result.InsertedID)
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
-            return
-        }
-        post.ID = insertedID.Hex() // Set the post ID as a string
+        insertedID := result.InsertedID.(primitive.ObjectID).Hex()  // Convert ObjectID to string
+        post.ID = insertedID  // Set the post ID as a string
 
         hub.BroadcastPost(post)
 
