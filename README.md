@@ -1,6 +1,6 @@
 # Social-Experiment
 
-**Social-Experiment** is a production-ready social media platform designed to facilitate user engagement and interactions through seamless content sharing. Built with a robust Go (Golang) backend and an intuitive Angular frontend, Maliaki allows users to register, log in, create, and share posts in real time, providing a dynamic and interactive social experience.
+**Social-Experiment** is a production-ready social media platform designed to facilitate user engagement and interactions through seamless content sharing. Built with a robust Go (Golang) backend and an intuitive Angular frontend, it allows users to register, log in, create, and share posts in real time, providing a dynamic and interactive social experience.
 
 ## Features
 
