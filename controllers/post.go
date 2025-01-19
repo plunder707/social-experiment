@@ -4,6 +4,7 @@ package controllers
 import (
 	"context"
 	"log"
+	"net/http"
 	"strings"
 	"time"
 
@@ -13,8 +14,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // CreatePost handles creating a new post
@@ -36,7 +38,6 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 			return
 		}
 
-		// Input validation and sanitization
 		req.Content = strings.TrimSpace(req.Content)
 		if req.Content == "" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Post content cannot be empty"})
@@ -45,15 +46,14 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 
 		safeContent := utils.SanitizeInput(req.Content)
 
-		// Retrieve username
 		var user models.User
-		// Assuming userID is the hex representation of ObjectID
 		objectID, err := primitive.ObjectIDFromHex(userID.(string))
 		if err != nil {
 			log.Printf("[ERROR] Invalid user ID format: %v", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
 			return
 		}
+
 		err = db.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
 		if err != nil {
 			log.Printf("[ERROR] Error fetching user: %v", err)
@@ -61,7 +61,6 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 			return
 		}
 
-		// Create post
 		post := models.Post{
 			UserID:    user.ID.Hex(),
 			Username:  user.Username,
@@ -75,9 +74,15 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
 			return
 		}
-		post.ID = result.InsertedID.(primitive.ObjectID).Hex()
 
-		// Broadcast to WebSocket clients
+		insertedID, ok := result.InsertedID.(primitive.ObjectID)
+		if !ok {
+			log.Printf("[ERROR] Failed to assert InsertedID to ObjectID: %v", result.InsertedID)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
+			return
+		}
+		post.ID = insertedID.Hex()
+
 		hub.BroadcastPost(post)
 
 		c.JSON(http.StatusOK, post)
@@ -105,3 +110,4 @@ func GetPosts(db *mongo.Collection) gin.HandlerFunc {
 		c.JSON(http.StatusOK, posts)
 	}
 }
+
