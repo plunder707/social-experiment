@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"social-experiment/models"
-	"social-experimennt/utils"
+	"social-experiment/utils"
 	"social-experiment/websocket"
 
 	"github.com/gin-gonic/gin"
