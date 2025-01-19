@@ -9,17 +9,19 @@ import (
 
 // Client represents a WebSocket client
 type Client struct {
-    hub  *Hub
-    conn *websocket.Conn
-    send chan []byte
+    hub    *Hub
+    conn   *websocket.Conn
+    send   chan []byte
+    UserID string
 }
 
 // NewClient creates a new WebSocket client instance
-func NewClient(hub *Hub, conn *websocket.Conn) *Client {
+func NewClient(hub *Hub, conn *websocket.Conn, userID string) *Client {
     return &Client{
-        hub:  hub,
-        conn: conn,
-        send: make(chan []byte, 256),
+        hub:    hub,
+        conn:   conn,
+        send:   make(chan []byte, 256),
+        UserID: userID,
     }
 }
 
