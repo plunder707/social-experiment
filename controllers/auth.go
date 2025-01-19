@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"maliaki-backend/models"
-	"maliaki-backend/utils"
+	"social-experiment/models"
+	"social-experiment/utils"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
