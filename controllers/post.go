@@ -98,7 +98,11 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 // GetPosts handles retrieving all posts
 func GetPosts(db *mongo.Collection) gin.HandlerFunc {
     return func(c *gin.Context) {
-        cursor, err := db.Find(context.Background(), bson.M{}, options.Find().SetSort(bson.D{{"created_at", -1}}))
+        // Define find options to sort posts by CreatedAt in descending order
+        findOptions := options.Find().SetSort(bson.D{{"created_at", -1}})
+
+        // Execute the find query
+        cursor, err := db.Find(context.Background(), bson.M{}, findOptions)
         if err != nil {
             log.Printf("[ERROR] Error fetching posts: %v", err)
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Error fetching posts"})
@@ -106,13 +110,25 @@ func GetPosts(db *mongo.Collection) gin.HandlerFunc {
         }
         defer cursor.Close(context.Background())
 
+        // Iterate through the cursor and decode posts
         var posts []models.Post
-        if err = cursor.All(context.Background(), &posts); err != nil {
-            log.Printf("[ERROR] Error decoding posts: %v", err)
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding posts"})
+        for cursor.Next(context.Background()) {
+            var post models.Post
+            if err := cursor.Decode(&post); err != nil {
+                log.Printf("[ERROR] Error decoding post: %v", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Error decoding posts"})
+                return
+            }
+            posts = append(posts, post)
+        }
+
+        if err := cursor.Err(); err != nil {
+            log.Printf("[ERROR] Cursor error: %v", err)
+            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing posts"})
             return
         }
 
+        // Respond with the list of posts
         c.JSON(http.StatusOK, posts)
     }
 }
