@@ -16,20 +16,21 @@ import (
     "go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/bson/primitive"
     "go.mongodb.org/mongo-driver/mongo"
-    "go.mongodb.org/mongo-driver/mongo/options"
 )
 
 // CreatePost handles creating a new post
 func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
     return func(c *gin.Context) {
+        // Retrieve userID from context
         userID, exists := c.Get("userID")
         if !exists {
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "User ID not found in context"})
+            c.JSON(http.StatusUnauthorized, gin.H{"error": "Authentication required"})
             return
         }
 
+        // Bind JSON input to request struct
         var req struct {
-            Content string `json:"content"`
+            Content string `json:"content" binding:"required"`
         }
 
         if err := c.ShouldBindJSON(&req); err != nil {
@@ -47,52 +48,52 @@ func CreatePost(db *mongo.Collection, hub *websocket.Hub) gin.HandlerFunc {
 
         safeContent := utils.SanitizeInput(req.Content)
 
-        // Retrieve user
-        var user models.User
-        // Assuming userID is the hex representation of ObjectID
+        // Convert userID from string to primitive.ObjectID
         objectID, err := primitive.ObjectIDFromHex(userID.(string))
         if err != nil {
             log.Printf("[ERROR] Invalid user ID format: %v", err)
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
+            c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
             return
         }
+
+        // Retrieve user from database
+        var user models.User
         err = db.FindOne(context.Background(), bson.M{"_id": objectID}).Decode(&user)
         if err != nil {
-            log.Printf("[ERROR] Error fetching user: %v", err)
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
+            if err == mongo.ErrNoDocuments {
+                c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
+            } else {
+                log.Printf("[ERROR] Error fetching user: %v", err)
+                c.JSON(http.StatusInternalServerError, gin.H{"error": "Error processing request"})
+            }
             return
         }
 
-        // Create post
+        // Create a new Post instance with a new ObjectID
         post := models.Post{
-            UserID:    user.ID.Hex(), // Convert ObjectID to string
+            ID:        primitive.NewObjectID(),
+            UserID:    user.ID,
             Username:  user.Username,
             Content:   safeContent,
-            CreatedAt: time.Now().Format(time.RFC3339),
+            CreatedAt: time.Now(),
         }
 
-        result, err := db.InsertOne(context.Background(), post)
+        // Insert the post into the database
+        _, err = db.InsertOne(context.Background(), post)
         if err != nil {
             log.Printf("[ERROR] Error creating post: %v", err)
             c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
             return
         }
 
-        // Assign the inserted ID as a hex string
-        oid, ok := result.InsertedID.(primitive.ObjectID)
-        if !ok {
-            log.Printf("[ERROR] InsertedID is not of type primitive.ObjectID")
-            c.JSON(http.StatusInternalServerError, gin.H{"error": "Error creating post"})
-            return
-        }
-        post.ID = oid.Hex() // Assign as string
-
-        // Broadcast to WebSocket clients
+        // Broadcast the new post to WebSocket clients
         hub.BroadcastPost(post)
 
+        // Respond with the created post
         c.JSON(http.StatusOK, post)
     }
 }
+
 
 // GetPosts handles retrieving all posts
 func GetPosts(db *mongo.Collection) gin.HandlerFunc {
