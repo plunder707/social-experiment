@@ -48,6 +48,13 @@
 
 1. **Clone the Repository**
 
+2. Edit .env and setup your server.
+
    ```bash
    git clone https://github.com/plunder707/social-experiment.git
    cd social-experiment
+   go mod init social-experiment
+   go mod tidy
+   go run main.go
+
+   
