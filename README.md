@@ -49,5 +49,5 @@
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/maliaki.git
-   cd maliaki/maliaki-backend
+   git clone https://github.com/plunder707/social-experiment.git
+   cd social-experiment
