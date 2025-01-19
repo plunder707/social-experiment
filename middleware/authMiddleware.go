@@ -4,7 +4,7 @@ package middleware
 import (
 	"net/http"
 
-	"maliaki-backend/utils"
+	"social-experiment/utils"
 
 	"github.com/gin-gonic/gin"
 )
