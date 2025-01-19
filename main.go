@@ -1,21 +1,17 @@
-// main.go
 package main
 
 import (
+	"context"
 	"log"
 
-	"maliaki-backend/controllers"
-	"maliaki-backend/middleware"
-	"maliaki-backend/websocket"
-	"maliaki-backend/utils"
+	"social-experiment/controllers"
+	"social-experiment/middleware"
+	"social-experiment/utils"
+	"social-experiment/websocket"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-)
-
-import (
-	"context"
 )
 
 func main() {
@@ -29,13 +25,13 @@ func main() {
 		log.Fatalf("[ERROR] Failed to connect to MongoDB: %v", err)
 	}
 	defer func() {
-		if err = mongoClient.Disconnect(context.Background()); err != nil {
+		if err := mongoClient.Disconnect(context.Background()); err != nil {
 			log.Printf("[ERROR] Failed to disconnect MongoDB: %v", err)
 		}
 	}()
 
-	userCollection := mongoClient.Database("maliaki").Collection("users")
-	postCollection := mongoClient.Database("maliaki").Collection("posts")
+	userCollection := mongoClient.Database("social-experiment").Collection("users")
+	postCollection := mongoClient.Database("social-experiment").Collection("posts")
 
 	// Initialize WebSocket Hub
 	hub := websocket.NewHub()
@@ -73,7 +69,9 @@ func main() {
 	router.POST("/login", controllers.Login(userCollection, config.JWTSecret))
 	router.POST("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.CreatePost(postCollection, hub))
 	router.GET("/posts", middleware.AuthMiddleware(config.JWTSecret), controllers.GetPosts(postCollection))
-	router.GET("/ws", hub.HandleWebSocket)
+	router.GET("/ws", func(c *gin.Context) {
+		hub.HandleWebSocket(c.Writer, c.Request)
+	})
 
 	// Start Server
 	address := ":" + config.ServerPort
